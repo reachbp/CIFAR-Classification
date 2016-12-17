@@ -4,15 +4,7 @@ require 'torch'
 require 'env'
 require 'trepl'
 require 'cunn'
---[[
 
-This file shows the modified example from the paper "Torchnet: An Open-Source Platform
-for (Deep) Learning Research".
-
-Revisions by Rob Fergus (fergus@cs.nyu.edu) and Christian Puhrsch (cpuhrsch@fb.com)
-Version 1.0 (10/14/16)
-
---]]
 
 local cmd = torch.CmdLine()
 cmd:option('-lr', 0.1, 'learning rate')

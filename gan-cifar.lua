@@ -19,8 +19,8 @@ cmd:option('-lr', 0.1, 'learning rate')
 cmd:option('-batchsize', 100, 'batchsize')
 cmd:option('-mnist', false, 'use mnist')
 cmd:option('-cifar', false, 'use cifar')
-cmd:option('-epochs', 10 , 'epochs')
-cmd:option('-npc', 100, 'numperclass')
+cmd:option('-epochs', 100 , 'epochs')
+cmd:option('-npc', 100 , 'numperclass')
 cmd:option('-output', 'output1', 'output file')
 local config = cmd:parse(arg)
 
@@ -107,29 +107,8 @@ local function getMnistIterator(datasets, useFull)
         }
     }
 end
-local gen = torch.Generator()
-function random_rotation(img)
-    -- print(img:size())
-    local rotation_degree = torch.random(gen, 0, 45)
-    return image.rotate(img, rotation_degree/360.0)
-end
 
-function resize(img)
-    return image.scale(img, 32, 32)
-end
-function transformInput(inp)
-   
-    f = tnt.transform.compose{
-        [1] = random_rotation
---	[2] = resize   
- }
-    return f(inp)
-end
-
-
-local function getCifarIterator(datasets, isTrain)
-    local toRemove = 0 
-    if isTrain == true then toRemove = 20 end
+local function getCifarIterator(datasets)
     local listdatasets = {}
     --inp.data = torch.reshape(inp.data, inp.size(), 3072):t()
 	--inp.labels = torch.reshape(inp.labels, 1, inp.size())
@@ -151,7 +130,7 @@ local function getCifarIterator(datasets, isTrain)
     end
     return tnt.DatasetIterator{
         dataset = tnt.BatchDataset{
-            batchsize = config.batchsize - toRemove,
+            batchsize = config.batchsize,
             dataset = tnt.ShuffleDataset{
                dataset = tnt.TransformDataset{
                     transform = function(x)
@@ -239,17 +218,16 @@ if config.mnist == true then
 end
 if config.cifar == true then
     local datasets
-    datasets = { --torch.load(base_data_path .. 'cifar-10-torch/batch1_gd' .. npc .. '.t7'),
-	torch.load(base_data_path .. 'cifar-10-torch/data_batch_1.t7', 'ascii'),
+    datasets = {torch.load(base_data_path .. 'cifar-10-torch/batch1_gd' .. npc .. '.t7'),
 	torch.load(base_data_path .. 'cifar-10-torch/data_batch_2.t7', 'ascii'),
 	torch.load(base_data_path .. 'cifar-10-torch/data_batch_3.t7', 'ascii'),
 	torch.load(base_data_path .. 'cifar-10-torch/data_batch_4.t7', 'ascii')}
     print(datasets[1].data:size())
-    trainiterator = getCifarIterator(datasets, true)
+    trainiterator = getCifarIterator(datasets)
     datasets = {torch.load(base_data_path .. 'cifar-10-torch/data_batch_5.t7', 'ascii')}
-    validiterator = getCifarIterator(datasets, false)
+    validiterator = getCifarIterator(datasets)
     datasets = {torch.load(base_data_path .. 'cifar-10-torch/test_batch.t7', 'ascii')}
-    testiterator  = getCifarIterator(datasets, false)
+    testiterator  = getCifarIterator(datasets)
 end
 
 
@@ -260,28 +238,14 @@ local epochs = config.epochs
 print("Started training!")
 local train_out = assert(io.open("outputs/" .. config.output ..  "train.csv", "w"))
 local val_out = assert(io.open("outputs/".. config.output .. "val.csv", "w"))
-local error_out = assert(io.open("outputs/".. config.output .. "errors.csv", "w"))
+
 for epoch = 1, epochs do
     local timer = torch.Timer()
     local loss = 0
     local errors = 0
     local count = 0
     for d in trainiterator() do
-	--print("Size before augment")
-	-- print(d.target:size())
-	--local new_d = d.input 
-        --for count = 1, 20 do      
-	     
-	 --    	res = transformInput(new_d[count])
-	--	tar = d.target[count]
-		
-	--	res = torch.reshape(res, 1, 3, 32, 32)
-	--	d.input = torch.cat(d.input, res, 1)
-	--	d.target = torch.cat(d.target, tar, 1)
-	--end
-	--print("Size after augment")
-   	--print(d.target:size())
-	network:forward(d.input:cuda())
+        network:forward(d.input:cuda())
         criterion:forward(network.output, d.target:cuda())
         network:zeroGradParameters()
         criterion:backward(network.output, d.target:cuda())
@@ -308,7 +272,6 @@ for epoch = 1, epochs do
     end
     validloss = validloss / count
     val_out:write(validloss, "\n")
-    error_out:write(errors .. ' ' .. validerrors .. ' \n')
     logs.val_loss[#logs.val_loss+ 1] = validloss   
      print(string.format(
     'train | epoch = %d | lr = %1.4f | loss: %2.4f | error: %2.4f - valid | validloss: %2.4f | validerror: %2.4f | s/iter: %2.4f',
@@ -319,7 +282,6 @@ end
 ---print(network:get(2).output)
 train_out:close()
 val_out:close()
-error_out:close()
 -- logging the graph
 print(logs.train_loss)
 log(logs)

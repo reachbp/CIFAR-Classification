@@ -269,16 +269,16 @@ for epoch = 1, epochs do
     for d in trainiterator() do
 	--print("Size before augment")
 	-- print(d.target:size())
-	--local new_d = d.input 
-        --for count = 1, 20 do      
+	local new_d = d.input 
+        for count = 1, 20 do      
 	     
-	 --    	res = transformInput(new_d[count])
-	--	tar = d.target[count]
+	     	res = transformInput(new_d[count])
+		tar = d.target[count]
 		
-	--	res = torch.reshape(res, 1, 3, 32, 32)
-	--	d.input = torch.cat(d.input, res, 1)
-	--	d.target = torch.cat(d.target, tar, 1)
-	--end
+		res = torch.reshape(res, 1, 3, 32, 32)
+		d.input = torch.cat(d.input, res, 1)
+		d.target = torch.cat(d.target, tar, 1)
+	end
 	--print("Size after augment")
    	--print(d.target:size())
 	network:forward(d.input:cuda())
