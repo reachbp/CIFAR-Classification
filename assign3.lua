@@ -4,15 +4,6 @@ require 'torch'
 require 'env'
 require 'trepl'
 require 'cunn'
---[[
-
-This file shows the modified example from the paper "Torchnet: An Open-Source Platform
-for (Deep) Learning Research".
-
-Revisions by Rob Fergus (fergus@cs.nyu.edu) and Christian Puhrsch (cpuhrsch@fb.com)
-Version 1.0 (10/14/16)
-
---]]
 
 local cmd = torch.CmdLine()
 cmd:option('-lr', 0.1, 'learning rate')
@@ -30,17 +21,6 @@ local tnt   = require 'torchnet'
 
 local base_data_path = '/work/bt978/cifardata/'
 local npc = config.npc
---- Question 2. Display images
---local train = torch.load(base_data_path .. 'train_28x28.t7', 'ascii')
--- Printing the first 100 images--
---print("Printing the first 100 Images of MNIST")
---image.display{image = train.data[{{1,100}}], legend = 'First 100 MNIST', scaleeach =true}
---print("Printing the first 100 Images of CIFAR")
---local train_cifar = torch.load(base_data_path .. 'cifar-10-torch/data_batch_1.t7', 'ascii')
---print({train_cifar})
---local first100_cifar = train_cifar.data:permute(2,1):reshape(10000,3,32,32)[{{1,100},{},{},{}}]
---print({first100_cifar})
---image.display{image = first100_cifar, legend = 'First 100 CIFAR', scaleeach =true}
 
 -- Dataprep for MNIST
 if config.mnist == true then
@@ -61,52 +41,7 @@ if config.mnist == true then
     end
 end
 
-------------------------------------------------------------------------
--- Build the dataloader
 
--- getDatasets returns a dataset that performs some minor transformation on
--- the input and the target (TransformDataset), shuffles the order of the
--- samples without replacement (ShuffleDataset) and merges them into
--- batches (BatchDataset).
-local function getMnistIterator(datasets, useFull)
-    local listdatasets = {}
-    for _, dataset in pairs(datasets) do
-     local list
-      if(useFull) then
-           list = torch.range(1, dataset.data:size(1)):totable()
-      else
-           list = torch.range(1, 1000):totable()
-      end
-        table.insert(listdatasets,
-                    tnt.ListDataset{
-                        list = list,
-                        load = function(idx)
-                            return {
-                                input  = dataset.data[idx],
-                                target = dataset.labels[idx]
-                            } -- sample contains input and target
-                        end
-                    })
-    end
-    return tnt.DatasetIterator{
-        dataset = tnt.BatchDataset{
-            batchsize = config.batchsize,
-            dataset = tnt.ShuffleDataset{
-               dataset = tnt.TransformDataset{
-                    transform = function(x)
-		       return {
-			  input  = x.input:view(-1):double(),
-			  target = torch.LongTensor{x.target + 1}
-                        }
-                    end,
-                    dataset = tnt.ConcatDataset{
-                        datasets = listdatasets
-                    }
-                },
-            }
-        }
-    }
-end
 
 local function getCifarIterator(datasets)
     local listdatasets = {}
@@ -163,7 +98,7 @@ function log(logs)
         gnuplot.pngfigure(paths.concat('outputs' ,config.output .. 'valtrain_' .. #logs.train_loss ..'.png'))
         gnuplot.plot({'train loss', torch.range(1, #logs.train_loss),torch.Tensor(logs.train_loss)}, {'val loss',torch.Tensor(logs.val_loss)})
         gnuplot.title('loss per epoch' .. config.output)
-   gnuplot.plotflush()
+        gnuplot.plotflush()
 end
 
 
@@ -207,15 +142,7 @@ if config.cifar == true then network = net1 end
 local trainiterator
 local validiterator
 local testiterator
-if config.mnist == true then
-    local datasets
-    datasets = {torch.load(base_data_path .. 'train_small_28x28.t7', 'ascii')}
-    trainiterator = getMnistIterator(datasets, false)
-    datasets = {torch.load(base_data_path .. 'valid_28x28.t7', 'ascii')}
-    validiterator = getMnistIterator(datasets, false)
-    datasets = {torch.load(base_data_path .. 'test_28x28.t7', 'ascii')}
-    testiterator  = getMnistIterator(datasets, true)
-end
+
 if config.cifar == true then
     local datasets
     datasets = {torch.load(base_data_path .. 'cifar-10-torch/batch1_gd' .. npc .. '.t7'),
@@ -285,20 +212,7 @@ val_out:close()
 -- logging the graph
 print(logs.train_loss)
 log(logs)
----Add code to plot out the network weights as images
-----(one for each out- put, of size 28 by 28) after the last epoch.
-----Grab a screenshot of the figure and include it in your report.
---- Qn 5: Print out the parameters for each Layer
-for i  = 1, 10 do
-  local params = network:get(i):parameters()
-  if params ~= nil then
-    local weights = params[1]
-    local bias = params[2]
-    print("Layer ", i, " Weights:", weights:nElement(), "Biases:", bias:nElement())
-  end
-end
 
-print("Printing out network weights")
 --image.display(network:get(1).weight)
 local testerrors = 0
 count = 0
