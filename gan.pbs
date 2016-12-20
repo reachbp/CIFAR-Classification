@@ -1,0 +1,32 @@
+#!/bin/bash -e
+
+#PBS -V
+#PBS -N gan
+#PBS -l nodes=1:ppn=8:gpus=1,mem=16GB,walltime=12:00:00
+#PBS -j oe
+
+cd /home/sv1239/projects/inf-proj/torch-gan/
+
+## do not need to modify after this line
+
+module purge
+module load python/intel/2.7.6
+module load jupyter/1.0.0
+module load torch/gnu/20160623
+module load tensorflow/python2.7/20160721
+module load theano/20160318
+module load matplotlib/intel/1.5.0
+module load ipython/4.0.0
+module load pandas/intel/0.17.1
+module load scikit-learn/intel/0.17
+module load gflags/gnu/2.1.1
+module load numpy/intel/1.10.1
+
+pip install --user --upgrade pip
+pip install --user scipy
+pip install --user pillow
+pip install --user scikit-image
+
+th train_lfw.lua -g 0
+
+
